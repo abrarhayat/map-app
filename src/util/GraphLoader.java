@@ -608,8 +608,8 @@ public class GraphLoader
 		// To use this method to convert your custom map files to custom intersections files
 		// just change YOURFILE in the strings below to be the name of the file you saved.
 		// You can comment out the other method calls above to save time.
-		GraphLoader.createIntersectionsFile("data/maps/YOURFILE.map", 
-					                         "data/intersections/YOURFILE.intersections");
+		GraphLoader.createIntersectionsFile("data/maps/abrar_map_2.map",
+					                         "data/intersections/abrar_map_2.intersections");
 
 	}
 	

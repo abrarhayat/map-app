@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/UCSDGraphs.iml" filepath="$PROJECT_DIR$/UCSDGraphs.iml" />
+      <module fileurl="file://$PROJECT_DIR$/map-app.iml" filepath="$PROJECT_DIR$/map-app.iml" />
     </modules>
   </component>
 </project>
