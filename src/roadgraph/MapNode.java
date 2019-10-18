@@ -31,7 +31,7 @@ public class MapNode {
     */
     public boolean addEdge(GeographicPoint endLocation, String roadName, String roadType, double length) {
         if(!alreadyContainsEdge(endLocation)) {
-            edges.add(new MapNodeEdge(endLocation, roadName, roadType, length));
+            edges.add(new MapNodeEdge(this.location, endLocation, roadName, roadType, length));
             return true;
         }
         return false;

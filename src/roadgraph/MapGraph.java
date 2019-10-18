@@ -23,10 +23,10 @@ import util.GraphLoader;
  *
  */
 public class MapGraph {
-	int numVertices;
-	int numEdges;
+	private int numVertices;
+	private int numEdges;
 	//a map that maintains a map between each unique GeographicPoint and each Vertex
-	Map<GeographicPoint, MapNode> nodeMap;
+	private Map<GeographicPoint, MapNode> nodeMap;
 
 
 	/** 
@@ -62,8 +62,6 @@ public class MapGraph {
 		return numEdges;
 	}
 
-	
-	
 	/** Add a node corresponding to an intersection at a Geographic Point
 	 * If the location is already in the graph or null, this method does 
 	 * not change the graph.

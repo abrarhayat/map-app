@@ -11,21 +11,28 @@ import geography.GeographicPoint;
 
 
 public class MapNodeEdge {
+    private GeographicPoint startLocation;
     private GeographicPoint endLocation;
     private String roadName;
     private String roadType;
     private double length;
 
-    public MapNodeEdge(GeographicPoint location) {
-        this.endLocation = location;
+    public MapNodeEdge(GeographicPoint startLocation, GeographicPoint endLocation) {
+        this.startLocation = startLocation;
+        this.endLocation = endLocation;
     }
 
-    public MapNodeEdge(GeographicPoint location, String roadName, String roadType,
+    public MapNodeEdge(GeographicPoint startLocation, GeographicPoint location, String roadName, String roadType,
                        double length) {
+        this.startLocation = startLocation;
         this.endLocation = location;
         this.roadName = roadName;
         this.roadType = roadType;
         this.length = length;
+    }
+
+    public GeographicPoint getStartLocation() {
+        return startLocation;
     }
 
     public GeographicPoint getEndLocation() {
