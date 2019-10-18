@@ -8,8 +8,7 @@
 package roadgraph;
 
 
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Consumer;
 
 import geography.GeographicPoint;
@@ -23,45 +22,44 @@ import util.GraphLoader;
  *
  */
 public class MapGraph {
-	//TODO: Add your member variables here in WEEK 3
-	
-	
+	int numVertices;
+	int numEdges;
+	Map<GeographicPoint, List<GeographicPointEdge>> vertexToNeighborMap;
+	Map<GeographicPoint, MapNode> locationToNodeMap;
+
+
 	/** 
 	 * Create a new empty MapGraph 
 	 */
-	public MapGraph()
-	{
-		// TODO: Implement in this constructor in WEEK 3
+	public MapGraph() {
+		numVertices = 0;
+		numEdges = 0;
+		vertexToNeighborMap = new HashMap<>();
+		locationToNodeMap = new HashMap<>();
 	}
 	
 	/**
 	 * Get the number of vertices (road intersections) in the graph
 	 * @return The number of vertices in the graph.
 	 */
-	public int getNumVertices()
-	{
-		//TODO: Implement this method in WEEK 3
-		return 0;
+	public int getNumVertices() {
+		return numVertices;
 	}
 	
 	/**
 	 * Return the intersections, which are the vertices in this graph.
 	 * @return The vertices in this graph as GeographicPoints
 	 */
-	public Set<GeographicPoint> getVertices()
-	{
-		//TODO: Implement this method in WEEK 3
-		return null;
+	public Set<GeographicPoint> getVertices() {
+		return vertexToNeighborMap.keySet();
 	}
 	
 	/**
 	 * Get the number of road segments in the graph
 	 * @return The number of edges in the graph.
 	 */
-	public int getNumEdges()
-	{
-		//TODO: Implement this method in WEEK 3
-		return 0;
+	public int getNumEdges() {
+		return numEdges;
 	}
 
 	
@@ -73,9 +71,12 @@ public class MapGraph {
 	 * @return true if a node was added, false if it was not (the node
 	 * was already in the graph, or the parameter is null).
 	 */
-	public boolean addVertex(GeographicPoint location)
-	{
-		// TODO: Implement this method in WEEK 3
+	public boolean addVertex(GeographicPoint location) {
+		if(!vertexToNeighborMap.containsKey(location) && location != null) {
+			vertexToNeighborMap.put(location, null);
+			numVertices++;
+			return true;
+		}
 		return false;
 	}
 	
@@ -93,9 +94,15 @@ public class MapGraph {
 	 */
 	public void addEdge(GeographicPoint from, GeographicPoint to, String roadName,
 			String roadType, double length) throws IllegalArgumentException {
-
-		//TODO: Implement this method in WEEK 3
-		
+		if(!vertexToNeighborMap.containsKey(from) || !vertexToNeighborMap.containsKey(to)) {
+			throw new IllegalArgumentException();
+		}
+		List<GeographicPointEdge> neighbors = vertexToNeighborMap.get(from);
+		if(neighbors == null) {
+			neighbors = new ArrayList<>();
+		}
+		neighbors.add(new GeographicPointEdge(from, to, roadName, roadType, length));
+		numEdges ++;
 	}
 	
 
@@ -124,11 +131,39 @@ public class MapGraph {
 			 					     GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
 		// TODO: Implement this method in WEEK 3
-		
+		boolean found = false;
+		Map<GeographicPoint, GeographicPoint> parentMap = new HashMap<>();
+
 		// Hook for visualization.  See writeup.
 		//nodeSearched.accept(next.getLocation());
 
 		return null;
+	}
+
+	private boolean bfsSearch(GeographicPoint start, GeographicPoint goal, HashMap<GeographicPoint, GeographicPoint>
+			parentMap, Consumer<GeographicPoint> nodeSearched) {
+		Queue<GeographicPoint> queue = new LinkedList<>();
+		List<GeographicPoint> visited = new ArrayList<>();
+		queue.add(start);
+		GeographicPoint current;
+		while (!queue.isEmpty()) {
+			current = queue.remove();
+			if (current == goal) {
+				return true;
+			}
+			ListIterator<GeographicPointEdge> iterator = vertexToNeighborMap.get(current).
+					listIterator(vertexToNeighborMap.get(current).size());
+			while (iterator.hasPrevious()) {
+				GeographicPoint next = iterator.previous().to;
+				if(!visited.contains(next)){
+					visited.add(next);
+					parentMap.put(next, current);
+					//for the use of front-end
+					nodeSearched.accept(next);
+				}
+			}
+		}
+		return false;
 	}
 	
 
@@ -195,6 +230,27 @@ public class MapGraph {
 		//nodeSearched.accept(next.getLocation());
 		
 		return null;
+	}
+
+	 class GeographicPointEdge {
+		GeographicPoint from;
+		GeographicPoint to;
+		String roadName;
+		String roadType;
+		double length;
+
+		public GeographicPointEdge(GeographicPoint from, GeographicPoint to) {
+			this.from = from;
+			this.to = to;
+		}
+		 public GeographicPointEdge(GeographicPoint from, GeographicPoint to, String roadName, String roadType,
+									double length) {
+			 this.from = from;
+			 this.to = to;
+			 this.roadName = roadName;
+			 this.roadType = roadType;
+			 this.length = length;
+		 }
 	}
 
 	
