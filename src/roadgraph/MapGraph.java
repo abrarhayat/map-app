@@ -15,7 +15,8 @@ import geography.GeographicPoint;
 import util.GraphLoader;
 
 /**
- * @author UCSD MOOC development team and YOU
+ * @author UCSD MOOC development team
+ * abrar hayat
  * 
  * A class which represents a graph of geographic locations
  * Nodes in the graph are intersections between 
@@ -24,8 +25,8 @@ import util.GraphLoader;
 public class MapGraph {
 	int numVertices;
 	int numEdges;
-	Map<GeographicPoint, List<GeographicPointEdge>> vertexToNeighborMap;
-	Map<GeographicPoint, MapNode> locationToNodeMap;
+	//a map that maintains a map between each unique GeographicPoint and each Vertex
+	Map<GeographicPoint, MapNode> nodeMap;
 
 
 	/** 
@@ -34,8 +35,7 @@ public class MapGraph {
 	public MapGraph() {
 		numVertices = 0;
 		numEdges = 0;
-		vertexToNeighborMap = new HashMap<>();
-		locationToNodeMap = new HashMap<>();
+		nodeMap = new HashMap<>();
 	}
 	
 	/**
@@ -51,7 +51,7 @@ public class MapGraph {
 	 * @return The vertices in this graph as GeographicPoints
 	 */
 	public Set<GeographicPoint> getVertices() {
-		return vertexToNeighborMap.keySet();
+		return nodeMap.keySet();
 	}
 	
 	/**
@@ -72,12 +72,16 @@ public class MapGraph {
 	 * was already in the graph, or the parameter is null).
 	 */
 	public boolean addVertex(GeographicPoint location) {
-		if(!vertexToNeighborMap.containsKey(location) && location != null) {
-			vertexToNeighborMap.put(location, null);
+		if(location != null && !containsNodeWithLocation(location)) {
+			nodeMap.put(location, new MapNode(location));
 			numVertices++;
 			return true;
 		}
 		return false;
+	}
+
+	private boolean containsNodeWithLocation(GeographicPoint location) {
+		return nodeMap.containsKey(location);
 	}
 	
 	/**
@@ -94,14 +98,11 @@ public class MapGraph {
 	 */
 	public void addEdge(GeographicPoint from, GeographicPoint to, String roadName,
 			String roadType, double length) throws IllegalArgumentException {
-		if(!vertexToNeighborMap.containsKey(from) || !vertexToNeighborMap.containsKey(to)) {
+		if(!containsNodeWithLocation(from) || !containsNodeWithLocation(to)) {
 			throw new IllegalArgumentException();
 		}
-		List<GeographicPointEdge> neighbors = vertexToNeighborMap.get(from);
-		if(neighbors == null) {
-			neighbors = new ArrayList<>();
-		}
-		neighbors.add(new GeographicPointEdge(from, to, roadName, roadType, length));
+		MapNode node = nodeMap.get(from);
+		node.addEdge(to, roadName, roadType, length);
 		numEdges ++;
 	}
 	
@@ -130,40 +131,65 @@ public class MapGraph {
 	public List<GeographicPoint> bfs(GeographicPoint start, 
 			 					     GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
-		// TODO: Implement this method in WEEK 3
-		boolean found = false;
-		Map<GeographicPoint, GeographicPoint> parentMap = new HashMap<>();
+		boolean found;
+		Map<MapNode, MapNode> parentMap = new HashMap<>();
 
-		// Hook for visualization.  See writeup.
-		//nodeSearched.accept(next.getLocation());
-
+		found = bfsSearch(nodeMap.get(start), nodeMap.get(goal), parentMap, nodeSearched);
+		if(found) {
+			return trackBackPath(nodeMap.get(start), nodeMap.get(goal), parentMap);
+		}
+		//for cases of links not being found
+		System.out.println("No links were found between the start and the goal Geographic points");
 		return null;
 	}
 
-	private boolean bfsSearch(GeographicPoint start, GeographicPoint goal, HashMap<GeographicPoint, GeographicPoint>
-			parentMap, Consumer<GeographicPoint> nodeSearched) {
-		Queue<GeographicPoint> queue = new LinkedList<>();
-		List<GeographicPoint> visited = new ArrayList<>();
-		queue.add(start);
-		GeographicPoint current;
-		while (!queue.isEmpty()) {
-			current = queue.remove();
-			if (current == goal) {
+	private boolean bfsSearch(MapNode start, MapNode goal, Map<MapNode, MapNode> parentMap,
+							  Consumer<GeographicPoint> nodeSearched) {
+		Queue<MapNode> nodeQueue = new LinkedList<>();
+		List<MapNode> visited = new ArrayList<>();
+		nodeQueue.add(start);
+		MapNode current;
+		while (!nodeQueue.isEmpty()) {
+			current = nodeQueue.remove();
+			if (current.getLocation() == goal.getLocation()) {
 				return true;
 			}
-			ListIterator<GeographicPointEdge> iterator = vertexToNeighborMap.get(current).
-					listIterator(vertexToNeighborMap.get(current).size());
+			//System.out.println("Current Node: " + current.getLocation());
+			List<MapNodeEdge> currentNeighbors = current.getEdges();
+			//System.out.println("Current Neighbors: " + currentNeighbors);
+			//iterator starts from the last index of the currentNeighbors list
+			ListIterator<MapNodeEdge> iterator = currentNeighbors.listIterator(currentNeighbors.size());
 			while (iterator.hasPrevious()) {
-				GeographicPoint next = iterator.previous().to;
+				GeographicPoint nextLocation = iterator.previous().getEndLocation();
+				MapNode next = nodeMap.get(nextLocation);
 				if(!visited.contains(next)){
 					visited.add(next);
 					parentMap.put(next, current);
-					//for the use of front-end
-					nodeSearched.accept(next);
+					nodeQueue.add(next);
+					//Consumer object is for the use of front-end visualization
+					nodeSearched.accept(next.getLocation());
 				}
 			}
 		}
 		return false;
+	}
+
+	private List<GeographicPoint> trackBackPath(MapNode start, MapNode goal, Map<MapNode, MapNode> parentMap) {
+		//handling case for self loop
+		if(parentMap.isEmpty()) {
+			parentMap.put(start, goal);
+		}
+		MapNode current = goal;
+		LinkedList<GeographicPoint> path = new LinkedList<>();
+		while (current != start) {
+			path.addFirst(current.getLocation());
+			//getting the previous node starting from goal and so on
+			current = parentMap.get(current);
+		}
+		//adding the start to the beginning of the list
+		path.addFirst(start.getLocation());
+		System.out.println("Path: " + path);
+		return path;
 	}
 	
 
@@ -232,28 +258,13 @@ public class MapGraph {
 		return null;
 	}
 
-	 class GeographicPointEdge {
-		GeographicPoint from;
-		GeographicPoint to;
-		String roadName;
-		String roadType;
-		double length;
-
-		public GeographicPointEdge(GeographicPoint from, GeographicPoint to) {
-			this.from = from;
-			this.to = to;
+	public void printMap() {
+		System.out.println("\n" + "Printing Vertices and corresponding neighbors:" + "\n");
+		for(GeographicPoint point : nodeMap.keySet()) {
+			System.out.println("Geographic Point: " + point);
+			System.out.println("Neighbors: " + nodeMap.get(point).getEdges() + "\n");
 		}
-		 public GeographicPointEdge(GeographicPoint from, GeographicPoint to, String roadName, String roadType,
-									double length) {
-			 this.from = from;
-			 this.to = to;
-			 this.roadName = roadName;
-			 this.roadType = roadType;
-			 this.length = length;
-		 }
 	}
-
-	
 	
 	public static void main(String[] args)
 	{
@@ -262,7 +273,8 @@ public class MapGraph {
 		System.out.print("DONE. \nLoading the map...");
 		GraphLoader.loadRoadMap("data/testdata/simpletest.map", firstMap);
 		System.out.println("DONE.");
-		
+		firstMap.printMap();
+
 		// You can use this method for testing.  
 		
 		
@@ -316,7 +328,7 @@ public class MapGraph {
 		List<GeographicPoint> route2 = theMap.aStarSearch(start,end);
 
 		*/
-		
+
 	}
 	
 }
