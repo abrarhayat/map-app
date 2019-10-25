@@ -129,13 +129,17 @@ public class MapGraph {
 		return path;
 	}
 
-	private double getNodeDistance(MapNode currentNode, boolean includeEndDistance) {
+	private double getNodeDistance(MapNode currentNode, MapNode currentNeighbor, MapNode goal, boolean includeEndDistance) {
 		if(includeEndDistance) {
+			if(currentNeighbor.getLocation().distance(goal.getLocation()) < currentNeighbor.getDistanceFromEnd()) {
+				currentNeighbor.setDistanceFromEnd(currentNeighbor.getLocation().distance(goal.getLocation()));
+			}
+			//System.out.println("A*: " + (currentNode.getDistanceFromStart() + currentNode.getDistanceFromEnd()));
 			return currentNode.getDistanceFromStart() + currentNode.getDistanceFromEnd();
 		}
+		//System.out.println("Dijkstra: " + currentNode.getDistanceFromStart());
 		return currentNode.getDistanceFromStart();
 	}
-	
 
 	/** Find the path from start to goal using breadth first search
 	 * 
@@ -265,11 +269,15 @@ public class MapGraph {
 	public List<GeographicPoint> aStarSearch(GeographicPoint start, 
 											 GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
-		// TODO: Implement this method in WEEK 4
-		
-		// Hook for visualization.  See writeup.
-		//nodeSearched.accept(next.getLocation());
-		
+		boolean found;
+		Map<MapNode, MapNode> parentMap = new HashMap<>();
+		found = searchImpl(getNodeWithLocation(start), getNodeWithLocation(goal), parentMap, nodeSearched,
+				true);
+		if(found) {
+			return trackBackPath(getNodeWithLocation(start), getNodeWithLocation(goal), parentMap);
+		}
+		//for cases of links not being found
+		System.out.println("No links were found between the start and the goal Geographic points");
 		return null;
 	}
 
@@ -292,17 +300,20 @@ public class MapGraph {
 			//System.out.println("currentNode: " + current);
 			if(!visited.contains(current)) {
 				visited.add(current);
+				System.out.println("Current: " + current);
 				if(current.getLocation() == goal.getLocation()) {
 					//System.out.println("\n" + "visited nodes: " + visited + "\n");
-					//System.out.println(visited.size());
+					System.out.println(visited.size());
 					return true;
 				}
 				//Consumer object is for the use of front-end visualization
 				nodeSearched.accept(current.getLocation());
 				for (MapNodeEdge currentEdge : current.getEdges()) {
 					MapNode currentNeighbor = nodeMap.get(currentEdge.getEndLocation());
-					double currentTotalDistance = getNodeDistance(current, includeEndDistance)
+					double currentTotalDistance = getNodeDistance(current, currentNeighbor, goal, includeEndDistance)
 							+ currentEdge.getLength();
+					//System.out.println("currentEndDistance: " + currentNeighbor.getDistanceFromEnd());
+					//System.out.println("currentTotalDistance: " + currentTotalDistance + " Neighbor: " + currentNeighbor);
 					//for setting a parent to next relation for the first time
 					parentMap.putIfAbsent(currentNeighbor, current);
 					if (currentNeighbor.getDistanceFromStart() > currentTotalDistance) {
