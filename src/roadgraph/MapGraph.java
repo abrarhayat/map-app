@@ -291,12 +291,12 @@ public class MapGraph {
 			current = priorityQueue.poll();
 			//System.out.println("currentNode: " + current);
 			if(!visited.contains(current)) {
+				visited.add(current);
 				if(current.getLocation() == goal.getLocation()) {
 					//System.out.println("\n" + "visited nodes: " + visited + "\n");
 					//System.out.println(visited.size());
 					return true;
 				}
-				visited.add(current);
 				//Consumer object is for the use of front-end visualization
 				nodeSearched.accept(current.getLocation());
 				for (MapNodeEdge currentEdge : current.getEdges()) {
