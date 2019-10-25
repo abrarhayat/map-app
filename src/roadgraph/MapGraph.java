@@ -300,14 +300,19 @@ public class MapGraph {
 			//System.out.println("currentNode: " + current);
 			if(!visited.contains(current)) {
 				visited.add(current);
+				//Consumer object is for the use of front-end visualization
+				nodeSearched.accept(current.getLocation());
 				System.out.println("Current: " + current);
 				if(current.getLocation() == goal.getLocation()) {
-					//System.out.println("\n" + "visited nodes: " + visited + "\n");
+					for(MapNode node : visited) {
+						System.out.println("\n");
+						System.out.println("Visited: " + node.getLocation());
+						System.out.println("Distance from start: " + node.getDistanceFromStart());
+						System.out.println("Distance from end: " + node.getDistanceFromEnd());
+					}
 					System.out.println(visited.size());
 					return true;
 				}
-				//Consumer object is for the use of front-end visualization
-				nodeSearched.accept(current.getLocation());
 				for (MapNodeEdge currentEdge : current.getEdges()) {
 					MapNode currentNeighbor = nodeMap.get(currentEdge.getEndLocation());
 					double currentTotalDistance = getNodeDistance(current, currentNeighbor, goal, includeEndDistance)
@@ -385,7 +390,7 @@ public class MapGraph {
 
 		
 		/* Use this code in Week 3 End of Week Quiz */
-		/*MapGraph theMap = new MapGraph();
+		MapGraph theMap = new MapGraph();
 		System.out.print("DONE. \nLoading the map...");
 		GraphLoader.loadRoadMap("data/maps/utc.map", theMap);
 		System.out.println("DONE.");
@@ -397,7 +402,6 @@ public class MapGraph {
 		List<GeographicPoint> route = theMap.dijkstra(start,end);
 		List<GeographicPoint> route2 = theMap.aStarSearch(start,end);
 
-		*/
 
 	}
 	
