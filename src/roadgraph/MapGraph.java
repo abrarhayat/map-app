@@ -103,6 +103,13 @@ public class MapGraph {
 		node.addEdge(to, roadName, roadType, length);
 		numEdges ++;
 	}
+
+	private MapNode getNodeWithLocation(GeographicPoint geographicPoint) {
+		if(nodeMap.get(geographicPoint) != null) {
+			return nodeMap.get(geographicPoint);
+		}
+		throw new IllegalArgumentException("Invalid Start or Goal location entered!");
+	}
 	
 
 	/** Find the path from start to goal using breadth first search
@@ -132,9 +139,9 @@ public class MapGraph {
 		boolean found;
 		Map<MapNode, MapNode> parentMap = new HashMap<>();
 
-		found = bfsSearch(nodeMap.get(start), nodeMap.get(goal), parentMap, nodeSearched);
+		found = bfsSearch(getNodeWithLocation(start), getNodeWithLocation(goal), parentMap, nodeSearched);
 		if(found) {
-			return trackBackPath(nodeMap.get(start), nodeMap.get(goal), parentMap);
+			return trackBackPath(getNodeWithLocation(start), getNodeWithLocation(goal), parentMap);
 		}
 		//for cases of links not being found
 		System.out.println("No links were found between the start and the goal Geographic points");
@@ -216,12 +223,52 @@ public class MapGraph {
 	public List<GeographicPoint> dijkstra(GeographicPoint start, 
 										  GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
-		// TODO: Implement this method in WEEK 4
-
-		// Hook for visualization.  See writeup.
-		//nodeSearched.accept(next.getLocation());
-		
+		boolean found;
+		Map<MapNode, MapNode> parentMap = new HashMap<>();
+		found = dijkstraSearchImpl(getNodeWithLocation(start), getNodeWithLocation(goal), parentMap, nodeSearched);
+		if(found) {
+			return trackBackPath(getNodeWithLocation(start), getNodeWithLocation(goal), parentMap);
+		}
+		//for cases of links not being found
+		System.out.println("No links were found between the start and the goal Geographic points");
 		return null;
+	}
+
+	public boolean dijkstraSearchImpl(MapNode start, MapNode goal, Map<MapNode, MapNode> parentMap,
+									  Consumer<GeographicPoint> nodeSearched) {
+		PriorityQueue<MapNode> priorityQueue = new PriorityQueue<>();
+		LinkedList<MapNode> visited = new LinkedList<>();
+		MapNode current;
+		start.setDistanceFromStart(0);
+		priorityQueue.add(start);
+		while (!priorityQueue.isEmpty()){
+			current = priorityQueue.poll();
+			//System.out.println("currentNode: " + current);
+			if(!visited.contains(current)) {
+				if(current.getLocation() == goal.getLocation()) {
+					//System.out.println("\n" + "visited nodes: " + visited + "\n");
+					return true;
+				}
+				visited.add(current);
+				//Consumer object is for the use of front-end visualization
+				nodeSearched.accept(current.getLocation());
+				for (MapNodeEdge currentEdge : current.getEdges()) {
+					MapNode currentNeighbor = nodeMap.get(currentEdge.getEndLocation());
+					double currentTotalDistanceFromStart = current.getDistanceFromStart() + currentEdge.getLength();
+					//for setting a parent to next relation for the first time
+					parentMap.putIfAbsent(currentNeighbor, current);
+					if (currentNeighbor.getDistanceFromStart() > currentTotalDistanceFromStart) {
+						currentNeighbor.setDistanceFromStart(currentTotalDistanceFromStart);
+						//update parent if distance is shorter
+						parentMap.put(currentNeighbor, current);
+					}
+/*					System.out.println("Adding to queue: " + currentEdge.getEndLocation() +
+							" with current distance total " + currentTotalDistanceFromStart + "\n");*/
+					priorityQueue.add(currentNeighbor);
+				}
+			}
+		}
+		return false;
 	}
 
 	/** Find the path from start to goal using A-Star search
@@ -280,7 +327,6 @@ public class MapGraph {
 		 * the Week 3 End of Week Quiz, EVEN IF you score 100% on the 
 		 * programming assignment.
 		 */
-		/*
 		MapGraph simpleTestMap = new MapGraph();
 		GraphLoader.loadRoadMap("data/testdata/simpletest.map", simpleTestMap);
 		
@@ -309,8 +355,7 @@ public class MapGraph {
 		System.out.println("Test 3 using utc: Dijkstra should be 37 and AStar should be 10");
 		testroute = testMap.dijkstra(testStart,testEnd);
 		testroute2 = testMap.aStarSearch(testStart,testEnd);
-		*/
-		
+
 		
 		/* Use this code in Week 3 End of Week Quiz */
 		/*MapGraph theMap = new MapGraph();

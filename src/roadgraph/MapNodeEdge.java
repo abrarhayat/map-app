@@ -51,6 +51,10 @@ public class MapNodeEdge {
         return length;
     }
 
+    public void setLength(double length) {
+        this.length = length;
+    }
+
     public String toString() {
         return endLocation.toString();
     }
