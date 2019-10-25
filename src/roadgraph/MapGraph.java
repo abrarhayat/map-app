@@ -110,6 +110,31 @@ public class MapGraph {
 		}
 		throw new IllegalArgumentException("Invalid Start or Goal location entered!");
 	}
+
+	private List<GeographicPoint> trackBackPath(MapNode start, MapNode goal, Map<MapNode, MapNode> parentMap) {
+		//handling case for self loop
+		if(parentMap.isEmpty()) {
+			parentMap.put(start, goal);
+		}
+		MapNode current = goal;
+		LinkedList<GeographicPoint> path = new LinkedList<>();
+		while (current != start) {
+			path.addFirst(current.getLocation());
+			//getting the previous node starting from goal and so on
+			current = parentMap.get(current);
+		}
+		//adding the start to the beginning of the list
+		path.addFirst(start.getLocation());
+		System.out.println("Path: " + path);
+		return path;
+	}
+
+	private double getNodeDistance(MapNode currentNode, boolean includeEndDistance) {
+		if(includeEndDistance) {
+			return currentNode.getDistanceFromStart() + currentNode.getDistanceFromEnd();
+		}
+		return currentNode.getDistanceFromStart();
+	}
 	
 
 	/** Find the path from start to goal using breadth first search
@@ -179,25 +204,6 @@ public class MapGraph {
 		return false;
 	}
 
-	private List<GeographicPoint> trackBackPath(MapNode start, MapNode goal, Map<MapNode, MapNode> parentMap) {
-		//handling case for self loop
-		if(parentMap.isEmpty()) {
-			parentMap.put(start, goal);
-		}
-		MapNode current = goal;
-		LinkedList<GeographicPoint> path = new LinkedList<>();
-		while (current != start) {
-			path.addFirst(current.getLocation());
-			//getting the previous node starting from goal and so on
-			current = parentMap.get(current);
-		}
-		//adding the start to the beginning of the list
-		path.addFirst(start.getLocation());
-		System.out.println("Path: " + path);
-		return path;
-	}
-	
-
 	/** Find the path from start to goal using Dijkstra's algorithm
 	 * 
 	 * @param start The starting location
@@ -225,50 +231,14 @@ public class MapGraph {
 	{
 		boolean found;
 		Map<MapNode, MapNode> parentMap = new HashMap<>();
-		found = dijkstraSearchImpl(getNodeWithLocation(start), getNodeWithLocation(goal), parentMap, nodeSearched);
+		found = searchImpl(getNodeWithLocation(start), getNodeWithLocation(goal), parentMap, nodeSearched,
+				false);
 		if(found) {
 			return trackBackPath(getNodeWithLocation(start), getNodeWithLocation(goal), parentMap);
 		}
 		//for cases of links not being found
 		System.out.println("No links were found between the start and the goal Geographic points");
 		return null;
-	}
-
-	public boolean dijkstraSearchImpl(MapNode start, MapNode goal, Map<MapNode, MapNode> parentMap,
-									  Consumer<GeographicPoint> nodeSearched) {
-		PriorityQueue<MapNode> priorityQueue = new PriorityQueue<>();
-		LinkedList<MapNode> visited = new LinkedList<>();
-		MapNode current;
-		start.setDistanceFromStart(0);
-		priorityQueue.add(start);
-		while (!priorityQueue.isEmpty()){
-			current = priorityQueue.poll();
-			//System.out.println("currentNode: " + current);
-			if(!visited.contains(current)) {
-				if(current.getLocation() == goal.getLocation()) {
-					//System.out.println("\n" + "visited nodes: " + visited + "\n");
-					return true;
-				}
-				visited.add(current);
-				//Consumer object is for the use of front-end visualization
-				nodeSearched.accept(current.getLocation());
-				for (MapNodeEdge currentEdge : current.getEdges()) {
-					MapNode currentNeighbor = nodeMap.get(currentEdge.getEndLocation());
-					double currentTotalDistanceFromStart = current.getDistanceFromStart() + currentEdge.getLength();
-					//for setting a parent to next relation for the first time
-					parentMap.putIfAbsent(currentNeighbor, current);
-					if (currentNeighbor.getDistanceFromStart() > currentTotalDistanceFromStart) {
-						currentNeighbor.setDistanceFromStart(currentTotalDistanceFromStart);
-						//update parent if distance is shorter
-						parentMap.put(currentNeighbor, current);
-					}
-/*					System.out.println("Adding to queue: " + currentEdge.getEndLocation() +
-							" with current distance total " + currentTotalDistanceFromStart + "\n");*/
-					priorityQueue.add(currentNeighbor);
-				}
-			}
-		}
-		return false;
 	}
 
 	/** Find the path from start to goal using A-Star search
@@ -301,6 +271,52 @@ public class MapGraph {
 		//nodeSearched.accept(next.getLocation());
 		
 		return null;
+	}
+
+	/*
+	* This method will be called by both  aStarSearch and dijkstra
+	* the only difference will be whether we want to include the
+	* distance of the current vertex to the goal vertex while
+	* calculating the current total distance
+	*
+	*/
+	public boolean searchImpl(MapNode start, MapNode goal, Map<MapNode, MapNode> parentMap,
+							  Consumer<GeographicPoint> nodeSearched, boolean includeEndDistance) {
+		PriorityQueue<MapNode> priorityQueue = new PriorityQueue<>();
+		LinkedList<MapNode> visited = new LinkedList<>();
+		MapNode current;
+		start.setDistanceFromStart(0);
+		priorityQueue.add(start);
+		while (!priorityQueue.isEmpty()){
+			current = priorityQueue.poll();
+			//System.out.println("currentNode: " + current);
+			if(!visited.contains(current)) {
+				if(current.getLocation() == goal.getLocation()) {
+					//System.out.println("\n" + "visited nodes: " + visited + "\n");
+					//System.out.println(visited.size());
+					return true;
+				}
+				visited.add(current);
+				//Consumer object is for the use of front-end visualization
+				nodeSearched.accept(current.getLocation());
+				for (MapNodeEdge currentEdge : current.getEdges()) {
+					MapNode currentNeighbor = nodeMap.get(currentEdge.getEndLocation());
+					double currentTotalDistance = getNodeDistance(current, includeEndDistance)
+							+ currentEdge.getLength();
+					//for setting a parent to next relation for the first time
+					parentMap.putIfAbsent(currentNeighbor, current);
+					if (currentNeighbor.getDistanceFromStart() > currentTotalDistance) {
+						currentNeighbor.setDistanceFromStart(currentTotalDistance);
+						//update parent if distance is shorter
+						parentMap.put(currentNeighbor, current);
+					}
+/*					System.out.println("Adding to queue: " + currentEdge.getEndLocation() +
+							" with current distance total " + currentTotalDistanceFromStart + "\n");*/
+					priorityQueue.add(currentNeighbor);
+				}
+			}
+		}
+		return false;
 	}
 
 	public void printMap() {
