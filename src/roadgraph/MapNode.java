@@ -90,7 +90,7 @@ public class MapNode implements Comparable<MapNode> {
     @Override
     public int compareTo(MapNode other) {
         double otherDistance = other.getDistanceFromStart() + other.getDistanceFromEnd();
-        double thisDistance = this.distanceFromStart + this.getDistanceFromEnd();
+        double thisDistance = this.distanceFromStart + this.distanceFromEnd;
         if(thisDistance > otherDistance){
             return 1;
         } else if(thisDistance < otherDistance){

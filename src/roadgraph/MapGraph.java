@@ -125,20 +125,26 @@ public class MapGraph {
 		}
 		//adding the start to the beginning of the list
 		path.addFirst(start.getLocation());
-		System.out.println("Path: " + path);
+		System.out.println("Path: " + path + "\n");
 		return path;
 	}
 
-	private double getNodeDistance(MapNode currentNode, MapNode currentNeighbor, MapNode goal, boolean includeEndDistance) {
+	private void updateDistances(MapNode current, MapNode currentNeighbor, MapNode goal, MapNodeEdge currentEdge,
+								 Map<MapNode, MapNode> parentMap, boolean includeEndDistance) {
+		double calculatedDistanceFromStart = current.getDistanceFromStart() + currentEdge.getLength();
+		parentMap.putIfAbsent(currentNeighbor, current);
 		if(includeEndDistance) {
-			if(currentNeighbor.getLocation().distance(goal.getLocation()) < currentNeighbor.getDistanceFromEnd()) {
-				currentNeighbor.setDistanceFromEnd(currentNeighbor.getLocation().distance(goal.getLocation()));
+			double calculatedDistanceFromEnd = currentNeighbor.getLocation().distance(goal.getLocation());
+			//changing infinity distance from goal to straigth line distance
+			if(currentNeighbor.getDistanceFromEnd() > calculatedDistanceFromEnd) {
+				currentNeighbor.setDistanceFromEnd(calculatedDistanceFromEnd);
 			}
-			//System.out.println("A*: " + (currentNode.getDistanceFromStart() + currentNode.getDistanceFromEnd()));
-			return currentNode.getDistanceFromStart() + currentNode.getDistanceFromEnd();
 		}
-		//System.out.println("Dijkstra: " + currentNode.getDistanceFromStart());
-		return currentNode.getDistanceFromStart();
+		double totalDistance = currentNeighbor.getDistanceFromStart() + currentNeighbor.getDistanceFromEnd();
+		if(totalDistance > calculatedDistanceFromStart + currentNeighbor.getDistanceFromEnd()) {
+			currentNeighbor.setDistanceFromStart(calculatedDistanceFromStart);
+			parentMap.put(currentNeighbor, current);
+		}
 	}
 
 	/** Find the path from start to goal using breadth first search
@@ -302,32 +308,26 @@ public class MapGraph {
 				visited.add(current);
 				//Consumer object is for the use of front-end visualization
 				nodeSearched.accept(current.getLocation());
-				System.out.println("Current: " + current);
+				//System.out.println("Current: " + current);
 				if(current.getLocation() == goal.getLocation()) {
-					for(MapNode node : visited) {
+/*					for(MapNode node : visited) {
 						System.out.println("\n");
 						System.out.println("Visited: " + node.getLocation());
 						System.out.println("Distance from start: " + node.getDistanceFromStart());
 						System.out.println("Distance from end: " + node.getDistanceFromEnd());
+					}*/
+					if(includeEndDistance) {
+						System.out.println("A* SEARCH:");
+					} else {
+						System.out.println("DIJKSTRA:");
 					}
-					System.out.println(visited.size());
+					System.out.println("Visited Number of nodes: " + visited.size());
 					return true;
 				}
 				for (MapNodeEdge currentEdge : current.getEdges()) {
 					MapNode currentNeighbor = nodeMap.get(currentEdge.getEndLocation());
-					double currentTotalDistance = getNodeDistance(current, currentNeighbor, goal, includeEndDistance)
-							+ currentEdge.getLength();
-					//System.out.println("currentEndDistance: " + currentNeighbor.getDistanceFromEnd());
-					//System.out.println("currentTotalDistance: " + currentTotalDistance + " Neighbor: " + currentNeighbor);
-					//for setting a parent to next relation for the first time
-					parentMap.putIfAbsent(currentNeighbor, current);
-					if (currentNeighbor.getDistanceFromStart() > currentTotalDistance) {
-						currentNeighbor.setDistanceFromStart(currentTotalDistance);
-						//update parent if distance is shorter
-						parentMap.put(currentNeighbor, current);
-					}
-/*					System.out.println("Adding to queue: " + currentEdge.getEndLocation() +
-							" with current distance total " + currentTotalDistanceFromStart + "\n");*/
+					//update parent if distance is shorter
+					updateDistances(current, currentNeighbor, goal, currentEdge, parentMap, includeEndDistance);
 					priorityQueue.add(currentNeighbor);
 				}
 			}
@@ -377,16 +377,18 @@ public class MapGraph {
 		testStart = new GeographicPoint(32.869423, -117.220917);
 		testEnd = new GeographicPoint(32.869255, -117.216927);
 		System.out.println("Test 2 using utc: Dijkstra should be 13 and AStar should be 5");
-		testroute = testMap.dijkstra(testStart,testEnd);
-		testroute2 = testMap.aStarSearch(testStart,testEnd);
-		
-		
+		List<GeographicPoint> simpleDijkstra = testroute = testMap.dijkstra(testStart,testEnd);
+		List<GeographicPoint> simpleAStar = testroute2 = testMap.aStarSearch(testStart,testEnd);
+
+		// A more complex test using real data
+		MapGraph testMapComplex = new MapGraph();
+		GraphLoader.loadRoadMap("data/maps/utc.map", testMapComplex);
 		// A slightly more complex test using real data
 		testStart = new GeographicPoint(32.8674388, -117.2190213);
 		testEnd = new GeographicPoint(32.8697828, -117.2244506);
 		System.out.println("Test 3 using utc: Dijkstra should be 37 and AStar should be 10");
-		testroute = testMap.dijkstra(testStart,testEnd);
-		testroute2 = testMap.aStarSearch(testStart,testEnd);
+		List<GeographicPoint> complexDijkstra = testMapComplex.dijkstra(testStart,testEnd);
+		List<GeographicPoint> complexAStar = testMapComplex.aStarSearch(testStart,testEnd);
 
 		
 		/* Use this code in Week 3 End of Week Quiz */
