@@ -243,6 +243,9 @@ public class MapGraph {
 	public List<GeographicPoint> dijkstra(GeographicPoint start, 
 										  GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
+		if(savedPathsDjikstra.size() > 500) {
+			savedPathsDjikstra.clear();
+		}
 		if(savedPathsDjikstra.containsKey(start + "-->" + goal)) {
 			return savedPathsDjikstra.get(start + "-->" + goal);
 		}
@@ -284,6 +287,9 @@ public class MapGraph {
 	public List<GeographicPoint> aStarSearch(GeographicPoint start, 
 											 GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
+		if(savedPathsDjikstra.size() > 500) {
+			savedPathsDjikstra.clear();
+		}
 		if(savedPathsAStar.containsKey(start + "-->" + goal)) {
 			return savedPathsAStar.get(start + "-->" + goal);
 		}
