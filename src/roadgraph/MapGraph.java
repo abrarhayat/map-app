@@ -132,6 +132,31 @@ public class MapGraph {
 	private void updateDistances(MapNode current, MapNode currentNeighbor, MapNode goal, MapNodeEdge currentEdge,
 								 Map<MapNode, MapNode> parentMap, boolean includeEndDistance) {
 		double calculatedDistanceFromStart = current.getDistanceFromStart() + currentEdge.getLength();
+		System.out.println(calculatedDistanceFromStart);
+		System.out.println(currentEdge.getRoadType());
+		/*
+		*
+		* Adding weight to the start distance for the road type
+		*
+		*/
+		switch (currentEdge.getRoadType()){
+			case "residential":
+				calculatedDistanceFromStart += RoadTypes.RESIDENTIAL.value;
+				break;
+			case "primary":
+				calculatedDistanceFromStart += RoadTypes.PRIMARY.value;
+				break;
+			case "secondary":
+				calculatedDistanceFromStart += RoadTypes.SECONDARY.value;
+				break;
+			case "tertiary":
+				calculatedDistanceFromStart += RoadTypes.TERTIARY.value;
+				break;
+			case "motorway_link":
+				calculatedDistanceFromStart += RoadTypes.MOTORWAY_LINK.value;
+			default:
+				calculatedDistanceFromStart += 0;
+		}
 		parentMap.putIfAbsent(currentNeighbor, current);
 		if(includeEndDistance) {
 			double calculatedDistanceFromEnd = currentNeighbor.getLocation().distance(goal.getLocation());
