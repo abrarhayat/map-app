@@ -27,6 +27,7 @@ public class MapGraph {
 	private int numEdges;
 	//a map that maintains a map between each unique GeographicPoint and each Vertex
 	private Map<GeographicPoint, MapNode> nodeMap;
+	private List<String> uniqueRoadTypes;
 	private Map<String, List<GeographicPoint>> savedPathsDjikstra;
 	private Map<String, List<GeographicPoint>> savedPathsAStar;
 
@@ -85,6 +86,10 @@ public class MapGraph {
 	private boolean containsNodeWithLocation(GeographicPoint location) {
 		return nodeMap.containsKey(location);
 	}
+
+	private List<String> getAllUniqueRoadTypes() {
+		return uniqueRoadTypes;
+	}
 	
 	/**
 	 * Adds a directed edge to the graph from pt1 to pt2.  
@@ -130,12 +135,48 @@ public class MapGraph {
 		//adding the start to the beginning of the list
 		path.addFirst(start.getLocation());
 		System.out.println("Path: " + path + "\n");
+		System.out.println(getAllUniqueRoadTypes());
 		return path;
 	}
 
 	private void updateDistances(MapNode current, MapNode currentNeighbor, MapNode goal, MapNodeEdge currentEdge,
 								 Map<MapNode, MapNode> parentMap, boolean includeEndDistance) {
 		double calculatedDistanceFromStart = current.getDistanceFromStart() + currentEdge.getLength();
+		//System.out.println(calculatedDistanceFromStart);
+		//System.out.println(currentEdge.getRoadType());
+		/*
+		* Adding weight to the start distance for the road type
+		* The weights are based on assumptions on the speed limit
+		* The lesser the speed limit the greater the distance added		*
+		*/
+		switch (currentEdge.getRoadType()){
+			case "residential":
+				calculatedDistanceFromStart += RoadTypes.RESIDENTIAL.value;
+				break;
+			case "primary":
+				calculatedDistanceFromStart += RoadTypes.PRIMARY.value;
+				break;
+			case "secondary":
+				calculatedDistanceFromStart += RoadTypes.SECONDARY.value;
+				break;
+			case "tertiary":
+				calculatedDistanceFromStart += RoadTypes.TERTIARY.value;
+				break;
+			case "motorway_link":
+				calculatedDistanceFromStart += RoadTypes.MOTORWAY_LINK.value;
+				break;
+			case "city_street":
+				calculatedDistanceFromStart += RoadTypes.CITY_STREET.value;
+				break;
+			case "connector":
+				calculatedDistanceFromStart += RoadTypes.CONNECTOR.value;
+				break;
+			case "living_street":
+				calculatedDistanceFromStart += RoadTypes.LIVING_STREET.value;
+				break;
+			default:
+				calculatedDistanceFromStart += 0;
+		}
 		parentMap.putIfAbsent(currentNeighbor, current);
 		if(includeEndDistance) {
 			double calculatedDistanceFromEnd = currentNeighbor.getLocation().distance(goal.getLocation());
@@ -319,6 +360,7 @@ public class MapGraph {
 		PriorityQueue<MapNode> priorityQueue = new PriorityQueue<>();
 		LinkedList<MapNode> visited = new LinkedList<>();
 		MapNode current;
+		uniqueRoadTypes = new ArrayList<>();
 		start.setDistanceFromStart(0);
 		priorityQueue.add(start);
 		while (!priorityQueue.isEmpty()){
@@ -347,6 +389,9 @@ public class MapGraph {
 				for (MapNodeEdge currentEdge : current.getEdges()) {
 					MapNode currentNeighbor = nodeMap.get(currentEdge.getEndLocation());
 					//update parent if distance is shorter
+					if(!uniqueRoadTypes.contains(currentEdge.getRoadType())) {
+						uniqueRoadTypes.add(currentEdge.getRoadType());
+					}
 					updateDistances(current, currentNeighbor, goal, currentEdge, parentMap, includeEndDistance);
 					priorityQueue.add(currentNeighbor);
 				}
