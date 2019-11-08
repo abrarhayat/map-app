@@ -28,6 +28,8 @@ public class MapGraph {
 	//a map that maintains a map between each unique GeographicPoint and each Vertex
 	private Map<GeographicPoint, MapNode> nodeMap;
 	private List<String> uniqueRoadTypes;
+	private Map<String, List<GeographicPoint>> savedPathsDjikstra;
+	private Map<String, List<GeographicPoint>> savedPathsAStar;
 
 
 	/** 
@@ -37,6 +39,8 @@ public class MapGraph {
 		numVertices = 0;
 		numEdges = 0;
 		nodeMap = new HashMap<>();
+		savedPathsDjikstra = new HashMap<>();
+		savedPathsAStar = new HashMap<>();
 	}
 	
 	/**
@@ -280,12 +284,20 @@ public class MapGraph {
 	public List<GeographicPoint> dijkstra(GeographicPoint start, 
 										  GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
+		if(savedPathsDjikstra.size() > 500) {
+			savedPathsDjikstra.clear();
+		}
+		if(savedPathsDjikstra.containsKey(start + "-->" + goal)) {
+			return savedPathsDjikstra.get(start + "-->" + goal);
+		}
 		boolean found;
 		Map<MapNode, MapNode> parentMap = new HashMap<>();
 		found = searchImpl(getNodeWithLocation(start), getNodeWithLocation(goal), parentMap, nodeSearched,
 				false);
 		if(found) {
-			return trackBackPath(getNodeWithLocation(start), getNodeWithLocation(goal), parentMap);
+			List<GeographicPoint> path = trackBackPath(getNodeWithLocation(start), getNodeWithLocation(goal), parentMap);
+			savedPathsDjikstra.putIfAbsent(start + "-->" + goal, path);
+			return path;
 		}
 		//for cases of links not being found
 		System.out.println("No links were found between the start and the goal Geographic points");
@@ -316,11 +328,19 @@ public class MapGraph {
 	public List<GeographicPoint> aStarSearch(GeographicPoint start, 
 											 GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
+		if(savedPathsDjikstra.size() > 500) {
+			savedPathsDjikstra.clear();
+		}
+		if(savedPathsAStar.containsKey(start + "-->" + goal)) {
+			return savedPathsAStar.get(start + "-->" + goal);
+		}
 		boolean found;
 		Map<MapNode, MapNode> parentMap = new HashMap<>();
 		found = searchImpl(getNodeWithLocation(start), getNodeWithLocation(goal), parentMap, nodeSearched,
 				true);
 		if(found) {
+			List<GeographicPoint> path = trackBackPath(getNodeWithLocation(start), getNodeWithLocation(goal), parentMap);
+			savedPathsAStar.putIfAbsent(start + "-->" + goal, path);
 			return trackBackPath(getNodeWithLocation(start), getNodeWithLocation(goal), parentMap);
 		}
 		//for cases of links not being found
