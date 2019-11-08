@@ -1,7 +1,8 @@
 package roadgraph;
 
 public enum RoadTypes {
-    MOTORWAY_LINK(2), PRIMARY(5), SECONDARY(7), TERTIARY(9), RESIDENTIAL(10);
+    MOTORWAY_LINK(0), CONNECTOR(3.5), CITY_STREET(4), PRIMARY(4), SECONDARY(11),
+    TERTIARY(15), LIVING_STREET(19), RESIDENTIAL(20);
     double value;
 
     RoadTypes(double value) {
