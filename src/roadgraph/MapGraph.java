@@ -28,7 +28,9 @@ public class MapGraph {
 	//a map that maintains a map between each unique GeographicPoint and each Vertex
 	private Map<GeographicPoint, MapNode> nodeMap;
 	private Map<String, List<GeographicPoint>> savedPathsDjikstra;
+	private Map<String, Double> shortestPathDjikstra;
 	private Map<String, List<GeographicPoint>> savedPathsAStar;
+	private Map<String, Double> shortestPathAStar;
 
 
 	/** 
@@ -355,6 +357,166 @@ public class MapGraph {
 		return false;
 	}
 
+	/*
+	* Given a start node and a set of nodes to visit
+	* Gives a greedy path for a tsp problem
+	*/
+	private List<GeographicPoint> getTspPathUncertain(MapNode startNode, Set<MapNode> setOfNodesToVisit) {
+		List<GeographicPoint> tspPath = new LinkedList<>();
+		List<MapNode> checkedNodes = new LinkedList<>();
+		double lowestDistance = 1000000000;
+		double currentDistance = lowestDistance;
+		double totalDistance = 0;
+		MapNode current = startNode;
+		MapNode next = null;
+		tspPath.add(startNode.getLocation());
+		Map<MapNode, MapNode> parentMap = new HashMap<>();
+		while (!checkedNodes.containsAll(setOfNodesToVisit)) {
+			for (MapNodeEdge currentEdge : current.getEdges()) {
+				currentDistance = currentEdge.getEndLocation().distance(current.getLocation());
+				if (currentDistance < lowestDistance) {
+					lowestDistance = currentDistance;
+					next = nodeMap.get(currentEdge.getEndLocation());
+				}
+				checkedNodes.add(nodeMap.get(currentEdge.getEndLocation()));
+			}
+			if(!tspPath.contains(next.getLocation())) {
+				tspPath.add(next.getLocation());
+			}
+			totalDistance += currentDistance;
+			lowestDistance = 100000000;
+			current = next;
+			System.out.println("next: " + next);
+		}
+		return tspPath;
+	}
+
+
+	/*
+	 * Given a start node and a set of nodes to visit
+	 * Gives a greedy path for a tsp problem given that the start node has edges to all the nodes to visit
+	 */
+	private List<GeographicPoint> getTspPathCertain(MapNode startNode, Set<MapNode> setOfNodesToVisit) {
+		List<GeographicPoint> tspPath = new LinkedList<>();
+		List<MapNode> visitedNodes = new LinkedList<>();
+		double lowestDistance = 1000000000;
+		double currentDistance = lowestDistance;
+		double totalDistance = 0;
+		MapNode current = startNode;
+		MapNode next = null;
+		tspPath.add(startNode.getLocation());
+		while (visitedNodes.size() != setOfNodesToVisit.size()) {
+			for (MapNode potentialNextNode : setOfNodesToVisit) {
+				if(!visitedNodes.contains(potentialNextNode)){
+					currentDistance = potentialNextNode.getLocation().distance(current.getLocation());
+/*					System.out.print("potentialNextNode: " + potentialNextNode + " ");
+					System.out.println("Distance: " + currentDistance);*/
+					if (currentDistance < lowestDistance) {
+						lowestDistance = currentDistance;
+						next = potentialNextNode;
+					}
+				}
+			}
+			try {
+				if(!tspPath.contains(next.getLocation())) {
+					tspPath.add(next.getLocation());
+				}
+			} catch (NullPointerException ex) {
+				System.out.println("No Next Nodes available!");
+				return null;
+			}
+			totalDistance += currentDistance;
+			lowestDistance = 100000000;
+			current = next;
+			visitedNodes.add(next);
+			//System.out.println("next: " + next);
+		}
+		totalDistance += next.getLocation().distance(startNode.getLocation());
+		tspPath.add(startNode.getLocation());
+		return tspPath;
+	}
+
+	/*
+	 * Given a start node and a set of nodes to visit
+	 * Gives a greedy path for a tsp problem given that the start node has edges to all the nodes to visit
+	 */
+	private List<GeographicPoint> getTspPath(MapNode startNode, Set<MapNode> setOfNodesToVisit) {
+		Consumer<GeographicPoint> temp = (x) -> {};
+		List<MapNode> tspVisited = new LinkedList<>();
+		MapNode currentNode;
+		MapNode nextNode = null;
+		double currentLowestEdgeLength = 1000000000;
+		double totalDistance = 0;
+		List<GeographicPoint> potentialNextPath= null;
+		List<GeographicPoint> finalPath = new LinkedList<>();
+		//We need to make sure that each node has a path by djikstra to every other node.
+		// If it does not have have conditions,then there is no TSP path
+		for(MapNode referenceNode : setOfNodesToVisit) {
+			for(MapNode nextHop : setOfNodesToVisit) {
+				//System.out.println("referenceNode: " + referenceNode);
+				//System.out.println("nextHop: " + nextHop);
+				if(!referenceNode.getLocation().equals(nextHop.getLocation())) {
+					if(dijkstra(referenceNode.getLocation(), nextHop.getLocation(), temp) == null) {
+						System.out.println("No TSP Path exists!");
+						return null;
+					}
+				}
+			}
+		}
+		//starting the journey from the startNode
+		//journey ends when we have visited all the nodes
+		currentNode = startNode;
+		while (!tspVisited.containsAll(setOfNodesToVisit)) {
+			for (MapNode potentialNextNode : setOfNodesToVisit) {
+				if (!currentNode.getLocation().equals(potentialNextNode.getLocation())
+						&& !tspVisited.contains(potentialNextNode)) {
+					double currentDistance = getDistanceFromDjikstraPath(currentNode.getLocation(),
+							potentialNextNode.getLocation(), temp);
+					potentialNextPath = dijkstra(currentNode.getLocation(), potentialNextNode.getLocation(), temp);
+					if (currentDistance < currentLowestEdgeLength) {
+						currentLowestEdgeLength = currentDistance;
+						nextNode = potentialNextNode;
+					}
+				}
+			}
+			for(GeographicPoint point : potentialNextPath) {
+				tspVisited.add(nodeMap.get(point));
+				//System.out.println(tspVisited);
+			}
+			totalDistance += currentLowestEdgeLength;
+			currentLowestEdgeLength = 1000000000;
+			currentNode = nextNode;
+		}
+		for(MapNode node: tspVisited) {
+			finalPath.add(node.getLocation());
+		}
+		totalDistance += getDistanceFromDjikstraPath(startNode.getLocation(), nextNode.getLocation(), temp);
+		finalPath.add(startNode.getLocation());
+		System.out.println("totalDistance: " + totalDistance);
+		return finalPath;
+	}
+
+	private double getDistanceFromDjikstraPath(GeographicPoint start, GeographicPoint end,
+												Consumer<GeographicPoint> nodeSearched) {
+		double distance = 0;
+		List<GeographicPoint> path = dijkstra(start, end, nodeSearched);
+		for (int index = 0; index < path.size() - 1; index++) {
+			//System.out.println("Start Node: " + nodeMap.get(potentialNextPath.get(index)));
+			//System.out.println("Potential Next: " + potentialNextPath.get(index + 1));
+			distance += nodeMap.get(path.get(index)).getEdgeWithEndLocation(path.get(index + 1)).getLength();
+		}
+		return distance;
+	}
+
+	private boolean setContainsNode(MapNode node, Set<MapNode> setOfNodes) {
+		for (MapNode current : setOfNodes) {
+			if(current.getLocation() == node.getLocation()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public void printMap() {
 		System.out.println("\n" + "Printing Vertices and corresponding neighbors:" + "\n");
 		for(GeographicPoint point : nodeMap.keySet()) {
@@ -424,7 +586,37 @@ public class MapGraph {
 		List<GeographicPoint> route = theMap.dijkstra(start,end);
 		List<GeographicPoint> route2 = theMap.aStarSearch(start,end);
 
+		/*
+		* Test For TSP Problem
+		*/
+		Set<MapNode> nodesToVisit = new HashSet<MapNode>();
+		int count = 0;
+		MapNode startNode = null;
+		for(GeographicPoint current : theMap.nodeMap.keySet()){
+			startNode = theMap.nodeMap.get(current);
+			break;
+		}
 
+		for (MapNodeEdge currentEdge : startNode.getEdges()) {
+			System.out.println("Potential Next: " + currentEdge.getEndLocation());
+			System.out.println("Current Distance: " + startNode.getLocation().distance(currentEdge.getEndLocation()));
+		}
+		System.out.println("\n");
+		MapNode current = startNode;
+		while (nodesToVisit.size() < 5) {
+			for (MapNodeEdge currentEdge : current.getEdges()) {
+				if(count == 0) {
+					startNode = theMap.nodeMap.get(currentEdge.getEndLocation());
+				}
+				nodesToVisit.add(theMap.nodeMap.get(currentEdge.getEndLocation()));
+				current = theMap.nodeMap.get(currentEdge.getEndLocation());
+				count++;
+			}
+		}
+
+		System.out.println("Start Node: " + startNode);
+		System.out.println("Nodes to visit: " + nodesToVisit);
+		//System.out.println("Path1: " + theMap.getTspPath(startNode, nodesToVisit));
+		System.out.println("TSP Path: " + theMap.getTspPath(startNode, nodesToVisit));
 	}
-	
 }
