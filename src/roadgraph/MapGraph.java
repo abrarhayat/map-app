@@ -31,6 +31,7 @@ public class MapGraph {
 	private Map<String, Double> shortestPathDjikstra;
 	private Map<String, List<GeographicPoint>> savedPathsAStar;
 	private Map<String, Double> shortestPathAStar;
+	private double lastTSPTotalDistance;
 
 
 	/** 
@@ -493,7 +494,50 @@ public class MapGraph {
 		totalDistance += getDistanceFromDjikstraPath(startNode.getLocation(), nextNode.getLocation(), temp);
 		finalPath.add(startNode.getLocation());
 		System.out.println("totalDistance: " + totalDistance);
+		lastTSPTotalDistance = totalDistance;
 		return finalPath;
+	}
+
+	private List<GeographicPoint> tspImprovedBy2OptMethod(MapNode startNode, Set<MapNode> setOfNodesToVisit) {
+		Consumer<GeographicPoint> temp = (x) -> {};
+		List<GeographicPoint> greedyPath = getTspPath(startNode, setOfNodesToVisit);;
+		List<GeographicPoint> improvedPath = new ArrayList<>();
+		List<MapNode> allNodes = new ArrayList<>(setOfNodesToVisit);
+		boolean betterPathFound = false;
+		int timesTried = 0;
+		double totalDistance = 0;
+		while (!betterPathFound && timesTried < 200) {
+			totalDistance = 0;
+			List<MapNode> visited = new LinkedList<>();
+			Random random = new Random();
+			MapNode current = startNode;
+			MapNode next = null;
+			visited.add(current);
+			while (!visited.containsAll(allNodes)) {
+				next = allNodes.get(random.nextInt(allNodes.size()));
+				if(!visited.contains(next)) {
+					totalDistance += getDistanceFromDjikstraPath(current.getLocation(), next.getLocation(), temp);
+					improvedPath.addAll(dijkstra(current.getLocation(), next.getLocation(), temp));
+					visited.add(next);
+					current = next;
+				}
+			}
+			if(totalDistance < lastTSPTotalDistance) {
+				betterPathFound = true;
+			}
+			//System.out.println(timesTried);
+			timesTried++;
+		}
+		//System.out.println("Potenial improvedPath: " + improvedPath);
+		System.out.println("totalDistance: " + totalDistance);
+		System.out.println("lastTSPTotalDistance: " + lastTSPTotalDistance);
+		if(totalDistance < lastTSPTotalDistance) {
+			System.out.println("Improved Path: " + improvedPath);
+			return improvedPath;
+		}else {
+			System.out.println("No better path found");
+			return greedyPath;
+		}
 	}
 
 	private double getDistanceFromDjikstraPath(GeographicPoint start, GeographicPoint end,
@@ -618,5 +662,6 @@ public class MapGraph {
 		System.out.println("Nodes to visit: " + nodesToVisit);
 		//System.out.println("Path1: " + theMap.getTspPath(startNode, nodesToVisit));
 		System.out.println("TSP Path: " + theMap.getTspPath(startNode, nodesToVisit));
+		theMap.tspImprovedBy2OptMethod(startNode, nodesToVisit);
 	}
 }
