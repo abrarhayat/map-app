@@ -57,6 +57,15 @@ public class MapNode implements Comparable<MapNode> {
         return edges;
     }
 
+    public MapNodeEdge getEdgeWithEndLocation(GeographicPoint neighborEndLocation) {
+        for(MapNodeEdge edge : edges) {
+            if(edge.getEndLocation().equals(neighborEndLocation)) {
+                return edge;
+            }
+        }
+        return null;
+    }
+
     public double getDistanceFromStart() {
         return distanceFromStart;
     }
