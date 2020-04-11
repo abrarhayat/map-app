@@ -503,6 +503,7 @@ public class MapGraph {
 		List<GeographicPoint> greedyPath = getTspPath(startNode, setOfNodesToVisit);;
 		List<GeographicPoint> improvedPath = new ArrayList<>();
 		List<MapNode> allNodes = new ArrayList<>(setOfNodesToVisit);
+		MapNode lastNode = null;
 		boolean betterPathFound = false;
 		int timesTried = 0;
 		double totalDistance = 0;
@@ -527,7 +528,10 @@ public class MapGraph {
 			}
 			//System.out.println(timesTried);
 			timesTried++;
+			lastNode = next;
 		}
+		totalDistance += getDistanceFromDjikstraPath(startNode.getLocation(), lastNode.getLocation(), temp);
+		improvedPath.add(startNode.getLocation());
 		//System.out.println("Potenial improvedPath: " + improvedPath);
 		System.out.println("totalDistance: " + totalDistance);
 		System.out.println("lastTSPTotalDistance: " + lastTSPTotalDistance);
